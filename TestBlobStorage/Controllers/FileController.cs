@@ -79,7 +79,7 @@ public class FileController : ControllerBase
         {
             using (var stream = file.OpenReadStream())
             {
-                var fileName = file.FileName;
+                var fileName = Guid.NewGuid().ToString();
                 var contentType = file.ContentType;
                 var result = _storageManager.UploadFile(stream, fileName, contentType);
                 return Ok(result);
@@ -99,7 +99,7 @@ public class FileController : ControllerBase
         {
             using (var stream = file.OpenReadStream())
             {
-                var fileName = file.FileName;
+                var fileName = Guid.NewGuid().ToString();
                 var contentType = file.ContentType;
                 var result = await _storageManager.UploadFileAsync(stream, fileName, contentType);
                 return Ok(result);
