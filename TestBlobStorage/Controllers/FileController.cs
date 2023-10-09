@@ -73,30 +73,42 @@ public class FileController : ControllerBase
     }
 
     [HttpPost("uploadFile")]
-    public IActionResult UploadFile(string fileName)
+    public IActionResult UploadFile(IFormFile file)
     {
         try
         {
-            var result = _storageManager.DeleteFileAsync(fileName);
-            return Ok(result);
+            using (var stream = file.OpenReadStream())
+            {
+                var fileName = file.FileName;
+                var contentType = file.ContentType;
+                var result = _storageManager.UploadFile(stream, fileName, contentType);
+                return Ok(result);
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.NotFound);
+            Console.WriteLine(ex.Message);
+            return StatusCode((int)HttpStatusCode.InternalServerError);
         }
     }
 
     [HttpPost("uploadFileAsync")]
-    public async Task<IActionResult> UploadFileAsync(string fileName)
+    public async Task<IActionResult> UploadFileAsync(IFormFile file)
     {
         try
         {
-            var result = await _storageManager.DeleteFileAsync(fileName);
-            return Ok(result);
+            using (var stream = file.OpenReadStream())
+            {
+                var fileName = file.FileName;
+                var contentType = file.ContentType;
+                var result = await _storageManager.UploadFileAsync(stream, fileName, contentType);
+                return Ok(result);
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.NotFound);
+            Console.WriteLine(ex.Message);
+            return StatusCode((int)HttpStatusCode.InternalServerError);
         }
     }
 
