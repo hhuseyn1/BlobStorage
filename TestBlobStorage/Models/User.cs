@@ -1,6 +1,8 @@
-﻿namespace TestBlobStorage.Models;
+﻿using TestBlobStorage.Models.Abstracts;
 
-public class User
+namespace TestBlobStorage.Models;
+
+public class User : BaseEntity
 {
     public string Name { get; set; }
     public string Surname { get; set; }

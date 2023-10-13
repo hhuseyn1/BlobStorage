@@ -41,6 +41,7 @@ public class UserController : ControllerBase
             PasswordHash.Create(user.Password, out byte[] passHash, out byte[] passSalt);
             var newUser = new User
             {
+                Id = Guid.NewGuid(),
                 Name = user.Name,
                 Surname = user.Surname,
                 PassHash = passHash,
