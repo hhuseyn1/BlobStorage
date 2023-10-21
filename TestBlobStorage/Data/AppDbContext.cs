@@ -9,5 +9,14 @@ public class AppDbContext : DbContext
     {
     }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        string endpointUri = "YourCosmosDBEndpoint";
+        string primaryKey = "YourPrimaryKey";
+        string databaseName = "YourDatabaseName";
+
+        optionsBuilder.UseCosmos(endpointUri, primaryKey, databaseName);
+    }
+
     public DbSet<User> Users { get; set; } 
 }
