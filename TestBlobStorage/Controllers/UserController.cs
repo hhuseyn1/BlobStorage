@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using TestBlobStorage.Data;
 using TestBlobStorage.Models;
 using TestBlobStorage.Models.DTOs;
@@ -12,50 +11,80 @@ namespace TestBlobStorage.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
+
     private readonly AppDbContext _context;
-    public UserController(AppDbContext context)
+    private readonly IStorageManager _storageManager;
+    public UserController(AppDbContext context, IStorageManager storageManager)
     {
         _context = context;
+        _storageManager = storageManager;
     }
 
-    [HttpPost("login")]
-    public async Task<string> Login(LoginDTO user)
+    [HttpGet]
+    public IActionResult GetProfilebyName(string name)
     {
-        var check = await _context.Users.FirstOrDefaultAsync(u => u.Name == user.Name);
-        if (check == null)
-            return null;
-        if (!PasswordHash.ConfirmPasswordHash(user.Password, check.PassHash, check.PassSalt))
-            return null;
-
-        return JWTService.GenerateSecurityToken(check);
+        var user = _context.Users.FirstOrDefault(x => x.Name == name);
+        return user is null ? NotFound() : Ok(user);
     }
 
-    [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterDTO user)
+
+    [HttpPost]
+    public IActionResult UpdateProfile(RegisterDTO user)
+    {
+        var check = _context.Users.FirstOrDefault(u => u.Name == user.Name);
+        if (check is null)
+            return NotFound();
+
+        var newUser = new User
+        {
+            Name = user.Name,
+            Surname = user.Surname,
+            Age = user.Age
+        };
+        return Ok(newUser);
+    }
+
+
+    [HttpDelete("deleteFile/{Id}")]
+    public IActionResult DeleteFile(Guid id)
     {
         try
         {
-            var check = await _context.Users.FirstOrDefaultAsync(u => u.Name == user.Name);
-            if (check != null)
-                return BadRequest("The user has already exists!");
-            PasswordHash.Create(user.Password, out byte[] passHash, out byte[] passSalt);
-            var newUser = new User
-            {
-                Id = Guid.NewGuid(),
-                Name = user.Name,
-                Surname = user.Surname,
-                PassHash = passHash,
-                PassSalt = passSalt
-            };
+            var user = _context.Users.FirstOrDefault(x => x.Id == id);
+            if (user is null)
+                return NotFound();
+            var fileName = user.Image.FileName;
+            var result = _storageManager.DeleteFile(fileName);
+            return Ok(result);
+        }
+        catch (Exception)
+        {
+            return StatusCode((int)HttpStatusCode.NotFound);
+        }
+    }
 
-            await _context.AddAsync(newUser);
-            await _context.SaveChangesAsync();
-            return Ok();
+
+    [HttpPost("uploadImage")]
+    public IActionResult UploadImage(Guid id, IFormFile file)
+    {
+        try
+        {
+            var user = _context.Users.FirstOrDefault(x => x.Id == id);
+            if (file is null || user is null) return NotFound();
+            using (var stream = file.OpenReadStream())
+            {
+                var fileName = Guid.NewGuid().ToString();
+                var contentType = file.ContentType;
+                var result = _storageManager.UploadFile(stream, fileName, contentType);
+                user.Image = file;
+                return Ok(result);
+            }
         }
         catch (Exception ex)
         {
-            return BadRequest(ex);
+            Console.WriteLine(ex.Message);
+            return StatusCode((int)HttpStatusCode.InternalServerError);
         }
-
     }
+
 }
